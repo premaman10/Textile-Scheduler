@@ -24,22 +24,51 @@ public class DemoDataController {
 
     @PostMapping("/populate")
     public String populateData() {
+        return generateOrders(100, false);
+    }
+
+    @PostMapping("/simulate")
+    public String simulatePeakHours() {
+        return generateOrders(100, true);
+    }
+
+    private String generateOrders(int count, boolean isSimulation) {
         List<Order> orders = new ArrayList<>();
         ColorFamily[] families = ColorFamily.values();
-        OrderType[] types = OrderType.values();
 
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < count; i++) {
+            OrderType type;
+            int deadline;
+
+            if (isSimulation) {
+                double rand = random.nextDouble();
+                if (rand < 0.3) {
+                    type = OrderType.RUSH;
+                    deadline = 8 + random.nextInt(5); // 8-12h
+                } else if (rand < 0.8) {
+                    type = OrderType.STANDARD;
+                    deadline = 24 + random.nextInt(25); // 24-48h
+                } else {
+                    type = OrderType.BULK;
+                    deadline = 48 + random.nextInt(25); // 48-72h
+                }
+            } else {
+                type = OrderType.values()[random.nextInt(OrderType.values().length)];
+                deadline = 8 + random.nextInt(64);
+            }
+
             orders.add(Order.builder()
-                    .colorName("Color-" + (random.nextInt(50) + 1))
+                    .colorName("Order-" + (i + 1))
                     .colorFamily(families[random.nextInt(families.length)])
-                    .quantityMeters(100 + random.nextInt(901)) // 100-1000
-                    .orderType(types[random.nextInt(types.length)])
-                    .deadlineHours(8 + random.nextInt(64)) // 8 to 72 hours
+                    .quantityMeters(100 + random.nextInt(901))
+                    .orderType(type)
+                    .deadlineHours(deadline)
                     .createdAt(LocalDateTime.now())
+                    .status(com.rainbow.scheduler.model.OrderStatus.PENDING)
                     .build());
         }
 
         orderRepository.saveAll(orders);
-        return "Successfully added 100 demo orders.";
+        return "Added " + count + (isSimulation ? " simulation" : " demo") + " orders.";
     }
 }

@@ -47,6 +47,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         userRepository.save(user);
-        return oAuth2User;
+
+        return new org.springframework.security.oauth2.core.user.DefaultOAuth2User(
+                java.util.Collections.singleton(
+                        new org.springframework.security.core.authority.SimpleGrantedAuthority(user.getRole().name())),
+                attributes,
+                userRequest.getClientRegistration().getProviderDetails().getUserInfoEndpoint()
+                        .getUserNameAttributeName());
     }
 }

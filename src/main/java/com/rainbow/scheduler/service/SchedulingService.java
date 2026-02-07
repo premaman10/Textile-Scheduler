@@ -209,20 +209,39 @@ public class SchedulingService {
     public ScheduleResponseDTO convertToDTO(Schedule schedule) {
         int timeSaved = schedule.getFifoCleaningTimeMinutes() - schedule.getTotalCleaningTimeMinutes();
 
+        // Calculate Deadline Compliance
+        long totalOrders = schedule.getSlots().size();
+        long compliantOrders = schedule.getSlots().stream()
+                .filter(s -> {
+                    LocalDateTime completionTime = s.getEndTime();
+                    LocalDateTime deadlineTime = s.getOrder().getCreatedAt().plusHours(s.getOrder().getDeadlineHours());
+                    return completionTime.isBefore(deadlineTime);
+                }).count();
+        double complianceRate = totalOrders > 0 ? (double) compliantOrders / totalOrders * 100 : 100.0;
+
+        // Calculate Machine Efficiency
+        long totalProdMinutes = schedule.getSlots().stream()
+                .mapToLong(s -> java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes())
+                .sum();
+        long totalDowntimeMinutes = schedule.getTotalCleaningTimeMinutes() + (totalOrders * setupTimeMinutes);
+        double efficiency = totalProdMinutes > 0
+                ? (double) totalProdMinutes / (totalProdMinutes + totalDowntimeMinutes) * 100
+                : 0;
+
         return ScheduleResponseDTO.builder()
                 .optimizedCleaningTimeMinutes(schedule.getTotalCleaningTimeMinutes())
                 .fifoCleaningTimeMinutes(schedule.getFifoCleaningTimeMinutes())
                 .timeSavedMinutes(Math.max(0, timeSaved))
-                .deadlineCompliance("100%") // Simplified
-                .machineEfficiency("82%") // Simplified
+                .deadlineCompliance(String.format("%.1f%%", complianceRate))
+                .machineEfficiency(String.format("%.1f%%", efficiency))
                 .ecoGrade(schedule.getEcoGrade())
                 .waterSavedLiters(schedule.getTotalWaterSavedLiters())
                 .chemicalWasteSavedKg(schedule.getTotalChemicalWasteSavedKg())
                 .schedule(schedule.getSlots().stream().map(s -> ScheduleResponseDTO.SlotDTO.builder()
                         .orderId(s.getOrder().getId())
                         .colorFamily(s.getColorFamily())
-                        .startTime(s.getStartTime().toLocalTime().toString())
-                        .endTime(s.getEndTime().toLocalTime().toString())
+                        .startTime(s.getStartTime().toString()) // Full ISO for JS parsing
+                        .endTime(s.getEndTime().toString())
                         .cleaningBeforeMinutes(s.getCleaningBeforeMinutes())
                         .build()).collect(Collectors.toList()))
                 .build();

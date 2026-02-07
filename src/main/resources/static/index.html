@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rainbow Textiles | Smart Scheduler</title>
+    <title>RainBow Textile | Smart Scheduler</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -17,7 +17,7 @@
         <aside class="sidebar glass">
             <div class="logo">
                 <div class="logo-icon"></div>
-                <span>Rainbow Textiles</span>
+                <span>RainBow Textile</span>
             </div>
             <nav>
                 <a href="#" class="nav-item active" data-tab="dashboard">
@@ -33,10 +33,10 @@
                     <i data-lucide="bar-chart-3"></i> Analytics
                 </a>
             </nav>
-            <div class="user-profile glass">
+            <div class="user-profile">
                 <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
                 <div class="user-info">
-                    <span class="user-name">Manager</span>
+                    <span class="user-name">Plant Manager</span>
                     <span class="user-role">Administrator</span>
                 </div>
             </div>
@@ -45,70 +45,181 @@
         <!-- Main Content -->
         <main class="content">
             <header>
-                <h1>Dashboard</h1>
+                <h1 id="pageTitle">Dashboard</h1>
                 <div class="header-actions">
-                    <button id="populateData" class="btn btn-secondary">
+                    <button id="populateBtn" class="btn btn-secondary">
                         <i data-lucide="database"></i> Populate Demo
                     </button>
-                    <button id="generateSchedule" class="btn btn-primary">
+                    <button id="simulateBtn" class="btn btn-secondary"
+                        style="border-color: var(--primary); color: var(--primary);">
+                        <i data-lucide="activity"></i> Peak Simulation
+                    </button>
+                    <button id="generateBtn" class="btn btn-primary">
                         <i data-lucide="zap"></i> Generate Optimized
                     </button>
                 </div>
             </header>
 
-            <!-- Stats Grid -->
-            <div id="dashboard" class="tab-content active">
+            <!-- Dashboard View -->
+            <div id="dashboardTab" class="tab-content active">
                 <div class="stats-grid">
                     <div class="stat-card glass eco">
-                        <div class="stat-header">
-                            <i data-lucide="droplets"></i>
-                            <span>Water Saved</span>
-                        </div>
-                        <div class="stat-value"><span id="waterSaved">0</span>L</div>
-                    </div>
-                    <div class="stat-card glass eco">
-                        <div class="stat-header">
-                            <i data-lucide="flask-conical"></i>
-                            <span>Chemicals Saved</span>
-                        </div>
-                        <div class="stat-value"><span id="wasteSaved">0</span>kg</div>
-                    </div>
-                    <div class="stat-card glass">
-                        <div class="stat-header">
-                            <i data-lucide="clock"></i>
-                            <span>Time Saved</span>
-                        </div>
-                        <div class="stat-value"><span id="timeSaved">0</span>m</div>
-                    </div>
-                    <div class="stat-card glass grade-a" id="ecoGrade">
                         <div class="stat-header">
                             <i data-lucide="leaf"></i>
                             <span>Eco Grade</span>
                         </div>
-                        <div class="stat-value">A</div>
+                        <div class="stat-value" id="ecoGradeValue">A</div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-header">
+                            <i data-lucide="check-circle"></i>
+                            <span>Compliance</span>
+                        </div>
+                        <div class="stat-value" id="complianceValue">0%</div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-header">
+                            <i data-lucide="gauge"></i>
+                            <span>Efficiency</span>
+                        </div>
+                        <div class="stat-value" id="efficiencyValue">0%</div>
+                    </div>
+                    <div class="stat-card glass">
+                        <div class="stat-header">
+                            <i data-lucide="clock"></i>
+                            <span>Cleaning Saved</span>
+                        </div>
+                        <div class="stat-value" id="cleaningSavedValue">0m</div>
                     </div>
                 </div>
 
                 <div class="charts-row">
                     <div class="chart-container glass">
-                        <h3>Cleaning Time Comparison</h3>
+                        <h3>Cleaning Downtime Optimization</h3>
                         <canvas id="comparisonChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity Feed -->
+                <div class="glass" style="padding: 2rem; border-radius: 2.5rem; margin-top: 1rem;">
+                    <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-dim);">Factory Alerts</h3>
+                    <div id="activityFeed" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                        <div style="color: var(--text-dim); font-size: 0.8rem;">No recent alerts.</div>
                     </div>
                 </div>
             </div>
 
             <!-- Schedule View -->
-            <div id="schedule" class="tab-content">
+            <div id="scheduleTab" class="tab-content">
                 <div class="schedule-timeline glass">
                     <div class="timeline-header">
-                        <h3>Production Timeline</h3>
+                        <h3>Production Sequence</h3>
                     </div>
-                    <div id="timelineContainer" class="timeline-body">
-                        <!-- Slots will be injected here -->
+                    <div class="timeline-grid" id="timelineBody">
+                        <div style="text-align: center; color: var(--text-dim); padding: 4rem;">
+                            Click "Generate Optimized" to view production sequence.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Orders View -->
+            <div id="ordersTab" class="tab-content">
+                <div class="glass" style="padding: 2.5rem; border-radius: 2.5rem;">
+                    <div class="timeline-header">
+                        <h3>Factory Orders</h3>
+                        <div class="header-actions">
+                            <span id="capacityLabel" style="font-size: 0.8rem; color: var(--text-dim);">Capacity:
+                                0/100</span>
+                            <button id="addOrderBtn" class="btn btn-primary" style="padding: 0.5rem 1rem;">
+                                <i data-lucide="plus"></i> New Order
+                            </button>
+                            <button id="clearOrdersBtn" class="btn btn-secondary"
+                                style="padding: 0.5rem 1rem; border-color: rgba(248, 113, 113, 0.2); color: #fca5a5;">
+                                <i data-lucide="trash-2"></i> Clear
+                            </button>
+                        </div>
+                    </div>
+                    <div class="order-list-container" style="max-height: 500px; overflow-y: auto;">
+                        <table class="order-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                            <thead>
+                                <tr
+                                    style="text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--glass-border);">
+                                    <th style="padding: 1rem;">ID</th>
+                                    <th style="padding: 1rem;">Color Name</th>
+                                    <th style="padding: 1rem;">Family</th>
+                                    <th style="padding: 1rem;">Qty (m)</th>
+                                    <th style="padding: 1rem;">Type</th>
+                                    <th style="padding: 1rem;">Deadline</th>
+                                    <th style="padding: 1rem;">Status</th>
+                                    <th style="padding: 1rem;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderTableBody">
+                                <!-- Orders injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="analyticsTab" class="tab-content">
+                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
+                    <div class="chart-container glass">
+                        <h3>Priority Distribution</h3>
+                        <canvas id="priorityChart"></canvas>
+                    </div>
+                    <div class="chart-container glass">
+                        <h3>Color Family Load</h3>
+                        <canvas id="familyChart"></canvas>
                     </div>
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Manual Entry Modal -->
+    <div id="orderModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass">
+            <h2>New Production Order</h2>
+            <form id="orderForm" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem;">
+                <div class="form-group">
+                    <label>Color Name</label>
+                    <input type="text" id="colorNameField" placeholder="e.g. Royal Blue" required>
+                </div>
+                <div class="form-group">
+                    <label>Color Family</label>
+                    <select id="colorFamilyField" required>
+                        <option value="WHITES_PASTELS">Whites & Pastels</option>
+                        <option value="LIGHT_COLORS">Light Colors</option>
+                        <option value="MEDIUM_COLORS">Medium Colors</option>
+                        <option value="DARK_COLORS">Dark Colors</option>
+                        <option value="BLACKS_DEEP_DARKS">Blacks & Deep Darks</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Quantity (Meters)</label>
+                    <input type="number" id="quantityField" min="100" placeholder="Min 100m" required>
+                </div>
+                <div class="form-group">
+                    <label>Order Type</label>
+                    <select id="orderTypeField" required>
+                        <option value="STANDARD">Standard</option>
+                        <option value="RUSH">Rush (Priority)</option>
+                        <option value="BULK">Bulk (Discounted)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Deadline (Hours from now)</label>
+                    <input type="number" id="deadlineField" min="1" placeholder="e.g. 24" required>
+                </div>
+                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Create Order</button>
+                    <button type="button" id="closeModal" class="btn btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="js/app.js"></script>

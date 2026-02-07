@@ -32,6 +32,10 @@ public class Order {
 
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private OrderStatus status = OrderStatus.PENDING;
+
     // Derived or logic fields
     private double urgencyScore;
     private double productionTimeHours;

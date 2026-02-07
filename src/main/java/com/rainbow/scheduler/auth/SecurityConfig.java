@@ -19,18 +19,19 @@ public class SecurityConfig {
                 http
                                 .csrf(csrf -> csrf.disable())
                                 .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers("/", "/login**", "/error**", "/webjars/**", "/api/**",
-                                                                "/schedule/**")
+                                                .requestMatchers("/login.html", "/css/**", "/js/**", "/images/**",
+                                                                "/error**", "/webjars/**")
                                                 .permitAll()
                                                 .requestMatchers("/schedule/compare", "/analytics/**")
                                                 .hasRole("MANAGER")
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2
+                                                .loginPage("/login.html")
                                                 .userInfoEndpoint(userInfo -> userInfo
                                                                 .userService(customOAuth2UserService))
-                                                .defaultSuccessUrl("/dashboard", true))
+                                                .defaultSuccessUrl("/", true))
                                 .logout(logout -> logout
-                                                .logoutSuccessUrl("/")
+                                                .logoutSuccessUrl("/login.html?logout")
                                                 .permitAll());
 
                 return http.build();
