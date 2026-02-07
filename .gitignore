@@ -1,0 +1,37 @@
+target/
+!.mvn/wrapper/maven-wrapper.jar
+java_error_in_idea_*.log
+java_error_in_idea_*.log
+
+# STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# IntelliJ IDEA ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# VS Code ###
+.vscode/
+
+# Others ###
+*.log
+*.tmp
+*.bak
+*.swp
+*~
+.DS_Store

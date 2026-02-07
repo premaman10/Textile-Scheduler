@@ -26,13 +26,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         Map<String, Object> attributes = oAuth2User.getAttributes();
         String email = (String) attributes.get("email");
-        if (email == null && "github".equals(registrationId)) {
-            // GitHub might not provide email in default attributes
-            email = attributes.get("login") + "@github.com";
-        }
 
-        String finalEmail = email;
-        Optional<User> userOptional = userRepository.findByEmail(finalEmail);
+        // Simple Google mapping
+        Optional<User> userOptional = userRepository.findByEmail(email);
 
         User user;
         if (userOptional.isPresent()) {
@@ -41,7 +37,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             user.setAvatar((String) attributes.get("picture"));
         } else {
             user = User.builder()
-                    .email(finalEmail)
+                    .email(email)
                     .name((String) attributes.get("name"))
                     .avatar((String) attributes.get("picture"))
                     .provider(registrationId)

@@ -12,26 +12,27 @@ import org.springframework.security.web.SecurityFilterChain;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final CustomOAuth2UserService customOAuth2UserService;
+        private final CustomOAuth2UserService customOAuth2UserService;
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login**", "/error**", "/webjars/**").permitAll()
-                        .requestMatchers("/schedule/compare", "/analytics/**").hasRole("MANAGER")
-                        .requestMatchers("/schedule/**").authenticated()
-                        .anyRequest().authenticated())
-                .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/login")
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuth2UserService))
-                        .defaultSuccessUrl("/dashboard", true))
-                .logout(logout -> logout
-                        .logoutSuccessUrl("/")
-                        .permitAll());
+        @Bean
+        public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+                http
+                                .csrf(csrf -> csrf.disable())
+                                .authorizeHttpRequests(auth -> auth
+                                                .requestMatchers("/", "/login**", "/error**", "/webjars/**", "/api/**",
+                                                                "/schedule/**")
+                                                .permitAll()
+                                                .requestMatchers("/schedule/compare", "/analytics/**")
+                                                .hasRole("MANAGER")
+                                                .anyRequest().authenticated())
+                                .oauth2Login(oauth2 -> oauth2
+                                                .userInfoEndpoint(userInfo -> userInfo
+                                                                .userService(customOAuth2UserService))
+                                                .defaultSuccessUrl("/dashboard", true))
+                                .logout(logout -> logout
+                                                .logoutSuccessUrl("/")
+                                                .permitAll());
 
-        return http.build();
-    }
+                return http.build();
+        }
 }
