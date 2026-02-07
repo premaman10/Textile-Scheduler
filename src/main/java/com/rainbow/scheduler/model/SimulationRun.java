@@ -25,6 +25,6 @@ public class SimulationRun {
     private String machineEfficiency;
     private int totalCleaningTimeMinutes;
     private int timeSavedMinutes;
-    private char ecoGrade;
     private int orderCount;
+    private String ecoGrade;
 }

@@ -18,14 +18,18 @@ public class OrderController {
 
     @GetMapping
     public ResponseEntity<List<Order>> getAllOrders() {
-        return ResponseEntity.ok(orderRepository.findAll());
+        return ResponseEntity.ok(orderRepository.findAll().stream()
+                .sorted(java.util.Comparator.comparing(Order::getScheduledStartTime,
+                        java.util.Comparator.nullsLast(java.util.Comparator.naturalOrder()))
+                        .thenComparing(Order::getId))
+                .collect(java.util.stream.Collectors.toList()));
     }
 
     @PostMapping
     public ResponseEntity<?> createOrder(@RequestBody Order order) {
-        if (orderRepository.count() >= 100) {
+        if (orderRepository.count() >= 1000) {
             return ResponseEntity.badRequest()
-                    .body("Factory capacity reached (100 orders). Please clear or process existing orders.");
+                    .body("Factory capacity reached (1000 orders). Please clear or process existing orders.");
         }
 
         if (order.getQuantityMeters() < 100) {

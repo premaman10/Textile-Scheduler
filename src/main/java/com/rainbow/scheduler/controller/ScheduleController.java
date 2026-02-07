@@ -26,16 +26,47 @@ public class ScheduleController {
             return ResponseEntity.badRequest().build();
         }
 
-        Schedule schedule = schedulingService.generateOptimizedSchedule(orders);
-        return ResponseEntity.ok(schedulingService.convertToDTO(schedule));
-    }
+        // Group by Simulation Run ID (null key for manual orders)
+        java.util.Map<Long, List<Order>> groups = orders.stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        o -> o.getSimulationRunId() == null ? -1L : o.getSimulationRunId()));
 
-    @GetMapping("/compare")
-    public ResponseEntity<ScheduleResponseDTO> compareSchedules() {
-        // For simplicity, we just return the latest optimized schedule with FIFO
-        // comparison
-        List<Order> orders = orderRepository.findAll();
-        Schedule schedule = schedulingService.generateOptimizedSchedule(orders);
-        return ResponseEntity.ok(schedulingService.convertToDTO(schedule));
+        if (groups.size() <= 1) {
+            // Standard single-batch behavior
+            Schedule schedule = schedulingService.generateOptimizedSchedule(orders);
+            return ResponseEntity.ok(schedulingService.convertToDTO(schedule));
+        }
+
+        // Multi-batch/Simulation behavior (1000 orders case)
+        List<ScheduleResponseDTO.SlotDTO> allSlots = new java.util.ArrayList<>();
+        int totalCleaning = 0;
+        int totalFifo = 0;
+        Schedule lastSchedule = null;
+
+        for (List<Order> batch : groups.values()) {
+            Schedule batchSchedule = schedulingService.generateOptimizedSchedule(batch);
+            // This triggers the DB update for this specific run
+            schedulingService.convertToDTO(batchSchedule);
+
+            // Aggregate for display
+            totalCleaning += batchSchedule.getTotalCleaningTimeMinutes();
+            totalFifo += batchSchedule.getFifoCleaningTimeMinutes();
+
+            ScheduleResponseDTO batchDTO = schedulingService.convertToDTO(batchSchedule);
+            allSlots.addAll(batchDTO.getSchedule());
+            lastSchedule = batchSchedule;
+        }
+
+        // Create a synthetic response for the frontend dashboard
+        int timeSaved = totalFifo - totalCleaning;
+
+        return ResponseEntity.ok(ScheduleResponseDTO.builder()
+                .optimizedCleaningTimeMinutes(totalCleaning)
+                .fifoCleaningTimeMinutes(totalFifo)
+                .timeSavedMinutes(Math.max(0, timeSaved))
+                .deadlineCompliance("N/A (Multi-Batch)") // Complex to aggregate
+                .machineEfficiency("100%") // Placeholder for combined view
+                .schedule(allSlots)
+                .build());
     }
 }

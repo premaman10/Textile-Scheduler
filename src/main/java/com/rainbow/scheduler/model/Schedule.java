@@ -23,11 +23,6 @@ public class Schedule {
 
     private int totalCleaningTimeMinutes;
     private int fifoCleaningTimeMinutes;
-    private double efficiencyScore;
-    private char ecoGrade; // A, B, C, D, E
-
-    private int totalWaterSavedLiters;
-    private double totalChemicalWasteSavedKg;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "schedule_id")

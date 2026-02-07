@@ -4,22 +4,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | RainBow Textile</title>
+    <title>Login | Textile Optimizer</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         body {
             display: flex;
             align-items: center;
             justify-content: center;
-            background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            height: 100vh;
         }
 
         .login-card {
             width: 400px;
             padding: 3rem;
             text-align: center;
+            background: white;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
             animation: fadeIn 0.8s ease;
         }
 
@@ -34,67 +38,111 @@
         .login-logo .logo-icon {
             width: 64px;
             height: 64px;
+            background: var(--primary);
+            border-radius: 16px;
         }
 
         .login-logo span {
             font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.05em;
+            font-weight: 700;
+            color: var(--text-main);
+            letter-spacing: -0.025em;
         }
 
         .login-desc {
-            color: var(--text-dim);
+            color: var(--text-secondary);
             font-size: 0.9rem;
             margin-bottom: 2.5rem;
             line-height: 1.6;
         }
 
-        .btn-google {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            width: 100%;
-            padding: 1rem;
-            background: #fff;
-            color: #000;
-            border-radius: 1.25rem;
-            text-decoration: none;
-            font-weight: 700;
-            font-size: 0.9rem;
-            transition: var(--transition);
-            border: none;
-            cursor: pointer;
+        .form-group {
+            margin-bottom: 1rem;
+            text-align: left;
         }
 
-        .btn-google:hover {
-            transform: scale(1.02);
-            box-shadow: 0 15px 30px rgba(255, 255, 255, 0.1);
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 0.875rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
         }
 
         .footer-note {
             margin-top: 2rem;
             font-size: 0.75rem;
-            color: var(--text-dim);
+            color: var(--text-secondary);
         }
     </style>
 </head>
 
 <body>
-    <div class="login-card glass">
+    <div class="login-card">
         <div class="login-logo">
             <div class="logo-icon"></div>
-            <span>RainBow Textile</span>
+            <span>Textile Optimizer</span>
         </div>
-        <p class="login-desc">Factory Optimization & Intelligent Production Scheduling System.</p>
+        <p class="login-desc">Intelligent Production Scheduling System.</p>
 
-        <a href="/oauth2/authorization/google" class="btn-google">
+        <form action="/perform_login" method="POST">
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" name="username" placeholder="user" required>
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="password" required>
+            </div>
+            <button type="submit" class="btn-submit">Sign In</button>
+        </form>
+
+        <div style="display: flex; align-items: center; gap: 1rem; margin: 1.5rem 0;">
+            <div style="height: 1px; flex: 1; background: var(--border);"></div>
+            <span style="color: var(--text-secondary); font-size: 0.8rem;">OR</span>
+            <div style="height: 1px; flex: 1; background: var(--border);"></div>
+        </div>
+
+        <a href="/oauth2/authorization/google"
+            style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; text-decoration: none; color: var(--text-main); font-weight: 500; transition: all 0.2s; background: white;">
             <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="20" alt="Google">
             Sign in with Google
         </a>
 
         <div class="footer-note">
-            Administrators & Team Members only.
+            Authorized Personnel Only
         </div>
     </div>
     <script>

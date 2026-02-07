@@ -13,9 +13,6 @@ public class ScheduleResponseDTO {
     private int timeSavedMinutes;
     private String deadlineCompliance;
     private String machineEfficiency;
-    private char ecoGrade;
-    private int waterSavedLiters;
-    private double chemicalWasteSavedKg;
     private List<SlotDTO> schedule;
 
     @Data

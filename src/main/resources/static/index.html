@@ -4,262 +4,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RainBow Textile | Smart Scheduler</title>
+    <title>Textile Optimizer</title>
     <link rel="stylesheet" href="css/style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
     <div class="app-container">
-        <!-- Sidebar -->
-        <aside class="sidebar glass">
-            <div class="logo">
+        <!-- Top Navigation -->
+        <header class="top-nav">
+            <div class="nav-brand">
                 <div class="logo-icon"></div>
-                <span>RainBow Textile</span>
+                <span>Textile Optimizer</span>
             </div>
-            <nav>
-                <a href="#" class="nav-item active" data-tab="dashboard">
-                    <i data-lucide="layout-dashboard"></i> Dashboard
-                </a>
-                <a href="#" class="nav-item" data-tab="schedule">
-                    <i data-lucide="calendar"></i> Schedule
-                </a>
-                <a href="#" class="nav-item" data-tab="orders">
-                    <i data-lucide="package"></i> Orders
-                </a>
-                <a href="#" class="nav-item" data-tab="simulations">
-                    <i data-lucide="database"></i> Simulation Stats
-                </a>
-                <a href="#" class="nav-item" data-tab="analytics">
-                    <i data-lucide="bar-chart-3"></i> Analytics
-                </a>
+            <nav class="nav-links">
+                <a href="#" class="nav-link active" data-tab="dashboard">Dashboard</a>
+                <a href="#" class="nav-link" data-tab="orders">Orders</a>
+                <a href="#" class="nav-link" data-tab="schedule">Schedule</a>
+                <a href="#" class="nav-link" data-tab="simulations">Simulation</a>
             </nav>
-            <div class="user-profile">
-                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" alt="User">
-                <div class="user-info">
-                    <span class="user-name">Plant Manager</span>
-                    <span class="user-role">Administrator</span>
-                </div>
+            <div class="nav-user">
+                <span class="user-name">Aman</span>
+                <div class="user-avatar">A</div>
+                <form action="/logout" method="post" style="margin-left: 1rem;">
+                    <button type="submit" class="btn btn-secondary"
+                        style="padding: 0.25rem 0.5rem; font-size: 0.75rem;">Logout</button>
+                </form>
             </div>
-        </aside>
+        </header>
 
         <!-- Main Content -->
         <main class="content">
-            <header>
-                <h1 id="pageTitle">Dashboard</h1>
-                <div class="header-actions">
-                    <button id="populateBtn" class="btn btn-secondary">
-                        <i data-lucide="database"></i> Populate Demo
-                    </button>
-                    <button id="simulateBtn" class="btn btn-secondary"
-                        style="border-color: var(--primary); color: var(--primary);">
-                        <i data-lucide="activity"></i> Peak Simulation
-                    </button>
-                    <button id="generateBtn" class="btn btn-primary">
-                        <i data-lucide="zap"></i> Generate Optimized
-                    </button>
-                </div>
-            </header>
-
             <!-- Dashboard View -->
             <div id="dashboardTab" class="tab-content active">
-                <div class="stats-grid">
-                    <div class="stat-card glass eco">
-                        <div class="stat-header">
-                            <i data-lucide="leaf"></i>
-                            <span>Eco Grade</span>
-                        </div>
-                        <div class="stat-value" id="ecoGradeValue">A</div>
-                    </div>
-                    <div class="stat-card glass">
-                        <div class="stat-header">
-                            <i data-lucide="check-circle"></i>
-                            <span>Compliance</span>
-                        </div>
-                        <div class="stat-value" id="complianceValue">0%</div>
-                    </div>
-                    <div class="stat-card glass">
-                        <div class="stat-header">
-                            <i data-lucide="gauge"></i>
-                            <span>Efficiency</span>
-                        </div>
-                        <div class="stat-value" id="efficiencyValue">0%</div>
-                    </div>
-                    <div class="stat-card glass">
-                        <div class="stat-header">
-                            <i data-lucide="clock"></i>
-                            <span>Cleaning Saved</span>
-                        </div>
-                        <div class="stat-value" id="cleaningSavedValue">0m</div>
+                <div class="view-header">
+                    <h1>Dashboard</h1>
+                    <div class="header-actions">
+                        <button id="simulateBtn" class="btn btn-primary">
+                            <i data-lucide="zap" style="width:16px; margin-right:5px; vertical-align:text-bottom;"></i>
+                            Peak Simulation
+                        </button>
+                        <button id="generateBtn" class="btn btn-primary" style="background: #0f172a;">
+                            <i data-lucide="play" style="width:16px; margin-right:5px; vertical-align:text-bottom;"></i>
+                            Generate Optimized
+                        </button>
                     </div>
                 </div>
 
-                <div class="charts-row">
-                    <div class="chart-container glass">
-                        <h3>Cleaning Downtime Optimization</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">COMPLIANCE</span>
+                        <span class="stat-value" id="complianceValue">0%</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">EFFICIENCY</span>
+                        <span class="stat-value" id="efficiencyValue">0%</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">CLEANING SAVED</span>
+                        <span class="stat-value" id="cleaningSavedValue">0m</span>
+                    </div>
+                </div>
+
+                <div class="chart-section card">
+                    <h3>Cleaning Downtime Optimization</h3>
+                    <div class="chart-wrapper">
                         <canvas id="comparisonChart"></canvas>
                     </div>
                 </div>
 
-                <div class="glass" style="padding: 2rem; border-radius: 2.5rem; margin-top: 1rem;">
-                    <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-dim);">Factory Alerts</h3>
-                    <div id="activityFeed" style="display: flex; flex-direction: column; gap: 0.75rem;">
-                        <div style="color: var(--text-dim); font-size: 0.8rem;">No recent alerts.</div>
+                <div class="alerts-section card">
+                    <h3>Factory Alerts</h3>
+                    <div id="activityFeed" class="activity-feed">
+                        <div class="empty-state">No recent alerts.</div>
                     </div>
                 </div>
             </div>
 
             <!-- Schedule View -->
             <div id="scheduleTab" class="tab-content">
-                <div class="schedule-timeline glass">
-                    <div class="timeline-header">
-                        <h3>Production Sequence</h3>
+                <div class="view-header">
+                    <h1>Production Schedule</h1>
+                    <div class="header-actions">
+                        <button id="openAddOrderBtn" class="btn btn-secondary">Add Orders</button>
+                        <button id="optimizeBtn" class="btn btn-primary">Optimize Schedule</button>
                     </div>
-                    <div class="timeline-grid" id="timelineBody">
-                        <div style="text-align: center; color: var(--text-dim); padding: 4rem;">
-                            Click "Generate Optimized" to view production sequence.
-                        </div>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-label">OPTIMIZED CLEANING</span>
+                        <span class="stat-value" id="optCleaningVal">--</span>
                     </div>
+                    <div class="stat-card">
+                        <span class="stat-label">FIFO CLEANING</span>
+                        <span class="stat-value" id="fifoCleaningVal">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">CLEANING SAVED</span>
+                        <span class="stat-value" id="cleaningSavedVal2">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">MACHINE EFFICIENCY</span>
+                        <span class="stat-value" id="effVal2">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">DEADLINE COMPLIANCE</span>
+                        <span class="stat-value" id="compVal2">--</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-label">EXTRA CAPACITY</span>
+                        <span class="stat-value">0 orders</span>
+                    </div>
+                </div>
+
+                <div class="schedule-table-container card">
+                    <h3>Optimized Schedule</h3>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Order</th>
+                                <th>Color</th>
+                                <th>Family</th>
+                                <th>Deadline</th>
+                                <th>Cleaning (min)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="timelineBody">
+                            <!-- Rows will be injected here -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
             <!-- Orders View -->
             <div id="ordersTab" class="tab-content">
-                <div class="glass" style="padding: 2.5rem; border-radius: 2.5rem;">
-                    <div class="timeline-header">
-                        <h3>Factory Orders</h3>
-                        <div class="header-actions">
-                            <span id="capacityLabel" style="font-size: 0.8rem; color: var(--text-dim);">Capacity:
-                                0/100</span>
-                            <button id="addOrderBtn" class="btn btn-primary" style="padding: 0.5rem 1rem;">
-                                <i data-lucide="plus"></i> New Order
-                            </button>
-                            <button id="clearOrdersBtn" class="btn btn-secondary"
-                                style="padding: 0.5rem 1rem; border-color: rgba(248, 113, 113, 0.2); color: #fca5a5;">
-                                <i data-lucide="trash-2"></i> Clear
-                            </button>
+                <div class="view-header">
+                    <h1>Create Orders</h1>
+                    <div class="header-actions">
+                        <button class="btn btn-secondary" onclick="switchTab('schedule')">
+                            <i data-lucide="calendar"></i> View Schedule
+                        </button>
+                    </div>
+                </div>
+
+                <div class="order-form-container card">
+                    <div class="form-header">
+                        <div class="icon-box orange"><i data-lucide="plus"></i></div>
+                        <div class="text">
+                            <h3>New Order</h3>
+                            <p>Fill in the details below</p>
                         </div>
                     </div>
-                    <div class="order-list-container" style="max-height: 500px; overflow-y: auto;">
-                        <table class="order-table" style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
-                            <thead>
-                                <tr
-                                    style="text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--glass-border);">
-                                    <th style="padding: 1rem;">ID</th>
-                                    <th style="padding: 1rem;">Color Name</th>
-                                    <th style="padding: 1rem;">Family</th>
-                                    <th style="padding: 1rem;">Qty (m)</th>
-                                    <th style="padding: 1rem;">Type</th>
-                                    <th style="padding: 1rem;">Deadline</th>
-                                    <th style="padding: 1rem;">Status</th>
-                                    <th style="padding: 1rem;">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="orderTableBody">
-                            </tbody>
-                        </table>
+                    <form id="orderForm" class="grid-form">
+                        <div class="form-group">
+                            <label>Order name</label>
+                            <input type="text" id="colorNameField" placeholder="e.g. ORD-001" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Color</label>
+                            <input type="text" id="colorValueField" placeholder="e.g. Navy Blue, Pastel Pink" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Color family</label>
+                            <div class="family-selector">
+                                <button type="button" class="family-btn" data-family="WHITE">White</button>
+                                <button type="button" class="family-btn active"
+                                    data-family="LIGHT_COLORS">Light</button>
+                                <button type="button" class="family-btn" data-family="MEDIUM_COLORS">Medium</button>
+                                <button type="button" class="family-btn" data-family="DARK_COLORS">Dark</button>
+                                <button type="button" class="family-btn" data-family="BLACKS_DEEP_DARKS">Black</button>
+                                <input type="hidden" id="colorFamilyField" value="LIGHT_COLORS">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Quantity (meters)</label>
+                            <div class="input-with-unit">
+                                <input type="number" id="quantityField" min="100" max="1000" value="100" required>
+                                <span class="unit">m</span>
+                            </div>
+                            <span class="hint">100 - 1000 meters</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Deadline</label>
+                            <input type="datetime-local" id="deadlineDate" required>
+                            <input type="hidden" id="deadlineField">
+                        </div>
+                        <div class="form-group">
+                            <label>Order type</label>
+                            <div class="type-selector">
+                                <button type="button" class="type-btn" data-type="RUSH">Rush (8-12 hrs)</button>
+                                <button type="button" class="type-btn active" data-type="STANDARD">Standard (24-48
+                                    hrs)</button>
+                                <button type="button" class="type-btn" data-type="BULK">Bulk (48+ hrs)</button>
+                                <input type="hidden" id="orderTypeField" value="STANDARD">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary btn-large">Create order</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div class="order-list-container card" style="margin-top: 2rem;">
+                    <div class="section-header">
+                        <h3>Factory Orders</h3>
+                        <span id="capacityLabel">Capacity: 0/1000</span>
+                        <button id="clearOrdersBtn" class="btn btn-secondary-danger">Clear All</button>
                     </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Color</th>
+                                <th>Family</th>
+                                <th>Qty (m)</th>
+                                <th>Type</th>
+                                <th>Deadline</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderTableBody"></tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Simulation Stats View (Dedicated Page) -->
+            <!-- Simulation Stats View -->
             <div id="simulationsTab" class="tab-content">
-                <div class="glass" style="padding: 2.5rem; border-radius: 2.5rem;">
-                    <div class="timeline-header">
-                        <h3>Peak Hour Test Cases (Recent 10)</h3>
-                    </div>
-                    <div id="simHistoryList"
-                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
-                        <!-- Simulation Run Cards -->
-                    </div>
+                <div class="view-header">
+                    <h1>Simulation Stats</h1>
                 </div>
-            </div>
-
-            <!-- Analytics View -->
-            <div id="analyticsTab" class="tab-content">
-                <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr);">
-                    <div class="chart-container glass">
-                        <h3>Priority Distribution</h3>
-                        <canvas id="priorityChart"></canvas>
-                    </div>
-                    <div class="chart-container glass">
-                        <h3>Color Family Load</h3>
-                        <canvas id="familyChart"></canvas>
-                    </div>
+                <div id="simHistoryList" class="sim-grid">
+                    <!-- Simulation Run Cards -->
                 </div>
             </div>
         </main>
     </div>
 
-    <!-- Manual Entry Modal -->
-    <div id="orderModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content glass">
-            <h2>New Production Order</h2>
-            <form id="orderForm" style="display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1.5rem;">
-                <div class="form-group">
-                    <label>Color Name</label>
-                    <input type="text" id="colorNameField" placeholder="e.g. Royal Blue" required>
-                </div>
-                <div class="form-group">
-                    <label>Color Family</label>
-                    <select id="colorFamilyField" required>
-                        <option value="WHITES_PASTELS">Whites & Pastels</option>
-                        <option value="LIGHT_COLORS">Light Colors</option>
-                        <option value="MEDIUM_COLORS">Medium Colors</option>
-                        <option value="DARK_COLORS">Dark Colors</option>
-                        <option value="BLACKS_DEEP_DARKS">Blacks & Deep Darks</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Quantity (Meters)</label>
-                    <input type="number" id="quantityField" min="100" placeholder="Min 100m" required>
-                </div>
-                <div class="form-group">
-                    <label>Order Type</label>
-                    <select id="orderTypeField" required>
-                        <option value="STANDARD">Standard</option>
-                        <option value="RUSH">Rush (Priority)</option>
-                        <option value="BULK">Bulk (Discounted)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Deadline (Hours from now)</label>
-                    <input type="number" id="deadlineField" min="1" placeholder="e.g. 24" required>
-                </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Create Order</button>
-                    <button type="button" id="closeModal" class="btn btn-secondary">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Simulation Detail Modal (The Array of 100 Orders) -->
+    <!-- Simulation Detail Modal -->
     <div id="simDetailModal" class="modal-overlay" style="display: none;">
-        <div class="modal-content glass"
-            style="width: 80%; height: 80%; max-width: 1000px; display: flex; flex-direction: column;">
-            <div class="timeline-header">
+        <div class="modal-content card">
+            <div class="modal-header">
                 <h2 id="simDetailTitle">Simulation Data</h2>
-                <button id="closeSimModal" class="btn btn-secondary">Close View</button>
+                <button id="closeSimModal" class="btn btn-secondary">Close</button>
             </div>
-            <div style="flex-grow: 1; overflow-y: auto; margin-top: 1rem;">
-                <table class="order-table" style="width: 100%;">
+            <div class="modal-body">
+                <table class="data-table">
                     <thead>
-                        <tr
-                            style="text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--glass-border);">
-                            <th style="padding: 1rem;">ID</th>
-                            <th style="padding: 1rem;">Color</th>
-                            <th style="padding: 1rem;">Qty</th>
-                            <th style="padding: 1rem;">Type</th>
-                            <th style="padding: 1rem;">Deadline</th>
-                            <th style="padding: 1rem;">Received At</th>
-                            <th style="padding: 1rem;">Scheduled For</th>
+                        <tr>
+                            <th>ID</th>
+                            <th>Color</th>
+                            <th>Qty</th>
+                            <th>Type</th>
+                            <th>Deadline</th>
+                            <th>Received At</th>
+                            <th>Scheduled For</th>
                         </tr>
                     </thead>
-                    <tbody id="simDetailBody">
-                    </tbody>
+                    <tbody id="simDetailBody"></tbody>
                 </table>
             </div>
         </div>
