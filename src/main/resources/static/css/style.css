@@ -167,6 +167,23 @@ h1 {
     letter-spacing: -0.03em;
 }
 
+.tab-content {
+    display: none;
+    animation: fadeIn 0.4s ease;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+    padding-right: 0.5rem;
+}
+
+.tab-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.tab-content::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+}
+
 .header-actions {
     display: flex;
     gap: 0.8rem;
@@ -430,6 +447,7 @@ h1 {
     font-size: 1.5rem;
     font-weight: 800;
     letter-spacing: -0.04em;
+    color: #fff;
 }
 
 .form-group {

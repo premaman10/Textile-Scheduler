@@ -1,9 +1,8 @@
 package com.rainbow.scheduler.controller;
 
-import com.rainbow.scheduler.model.ColorFamily;
-import com.rainbow.scheduler.model.Order;
-import com.rainbow.scheduler.model.OrderType;
+import com.rainbow.scheduler.model.*;
 import com.rainbow.scheduler.repository.OrderRepository;
+import com.rainbow.scheduler.repository.SimulationRunRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +19,7 @@ import java.util.Random;
 public class DemoDataController {
 
     private final OrderRepository orderRepository;
+    private final SimulationRunRepository simulationRunRepository;
     private final Random random = new Random();
 
     @PostMapping("/populate")
@@ -29,10 +29,23 @@ public class DemoDataController {
 
     @PostMapping("/simulate")
     public String simulatePeakHours() {
-        return generateOrders(100, true);
+        // Create a new Simulation Run record
+        long runNumber = simulationRunRepository.count() + 1;
+        SimulationRun run = SimulationRun.builder()
+                .name("Test Case " + runNumber)
+                .timestamp(LocalDateTime.now())
+                .orderCount(100)
+                .build();
+        run = simulationRunRepository.save(run);
+
+        return generateOrders(100, true, run.getId());
     }
 
     private String generateOrders(int count, boolean isSimulation) {
+        return generateOrders(count, isSimulation, null);
+    }
+
+    private String generateOrders(int count, boolean isSimulation, Long runId) {
         List<Order> orders = new ArrayList<>();
         ColorFamily[] families = ColorFamily.values();
 
@@ -65,6 +78,7 @@ public class DemoDataController {
                     .deadlineHours(deadline)
                     .createdAt(LocalDateTime.now())
                     .status(com.rainbow.scheduler.model.OrderStatus.PENDING)
+                    .simulationRunId(runId)
                     .build());
         }
 

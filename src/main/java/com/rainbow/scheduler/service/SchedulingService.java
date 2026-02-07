@@ -1,6 +1,8 @@
 package com.rainbow.scheduler.service;
 
 import com.rainbow.scheduler.model.*;
+import com.rainbow.scheduler.repository.OrderRepository;
+import com.rainbow.scheduler.repository.SimulationRunRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -16,6 +18,8 @@ public class SchedulingService {
 
     private final CleaningService cleaningService;
     private final EcoEfficiencyService ecoEfficiencyService;
+    private final SimulationRunRepository simulationRunRepository;
+    private final OrderRepository orderRepository;
 
     @Value("${production.dyeing-speed-meters-per-hour:50}")
     private int dyeingSpeed;
@@ -29,31 +33,18 @@ public class SchedulingService {
     @Value("${production.daily-window-hours:16}")
     private int dailyWindowHours;
 
-    /**
-     * Phase 1: Order Analysis
-     * Calculates urgency, production time, and marks critical orders.
-     */
     public List<Order> analyzeOrders(List<Order> orders) {
         return orders.stream().map(order -> {
             double prodTimeHours = (double) order.getQuantityMeters() / dyeingSpeed;
             order.setProductionTimeHours(prodTimeHours);
-
-            // Urgency Score: (Quantity * OrderTypeWeight) / Deadline
             double urgency = (order.getQuantityMeters() * order.getOrderType().getPriceMultiplier())
                     / order.getDeadlineHours();
             order.setUrgencyScore(urgency);
-
-            // Mark critical if deadline < 12 hours
             order.setCritical(order.getDeadlineHours() < 12 || order.getOrderType() == OrderType.RUSH);
-
             return order;
         }).collect(Collectors.toList());
     }
 
-    /**
-     * Phase 2: Base Scheduling
-     * Sorts critical orders by deadline, then others by typical color flow.
-     */
     public List<Order> generateBaseSchedule(List<Order> analyzedOrders) {
         List<Order> critical = analyzedOrders.stream()
                 .filter(Order::isCritical)
@@ -62,8 +53,7 @@ public class SchedulingService {
 
         List<Order> others = analyzedOrders.stream()
                 .filter(o -> !o.isCritical())
-                .sorted(Comparator.comparing(Order::getColorFamily)
-                        .thenComparing(o -> o.getOrderType().ordinal())) // RUSH -> STANDARD -> BULK
+                .sorted(Comparator.comparing(Order::getColorFamily).thenComparing(o -> o.getOrderType().ordinal()))
                 .collect(Collectors.toList());
 
         List<Order> baseSeq = new ArrayList<>(critical);
@@ -71,10 +61,6 @@ public class SchedulingService {
         return baseSeq;
     }
 
-    /**
-     * Phase 3: Look-Ahead Optimization
-     * Tries to find better insertion points for same-family orders.
-     */
     public List<Order> optimizeSequence(List<Order> baseSeq) {
         LinkedList<Order> optimized = new LinkedList<>();
         if (baseSeq.isEmpty())
@@ -85,28 +71,20 @@ public class SchedulingService {
                 optimized.add(order);
                 continue;
             }
-
-            // Try current position (end)
             int bestPos = optimized.size();
             int minAddedCleaning = cleaningService.calculateCleaningTime(optimized.getLast().getColorFamily(),
                     order.getColorFamily());
-
-            // Look back for same family to reduce cleaning
             for (int i = 0; i < optimized.size(); i++) {
                 ColorFamily prevFamily = (i == 0) ? ColorFamily.WHITES_PASTELS : optimized.get(i - 1).getColorFamily();
                 ColorFamily currentFamily = optimized.get(i).getColorFamily();
-
                 int cleaningBeforeIfInserted = cleaningService.calculateCleaningTime(prevFamily,
                         order.getColorFamily());
                 int cleaningAfterIfInserted = cleaningService.calculateCleaningTime(order.getColorFamily(),
                         currentFamily);
                 int cleaningSavedOld = cleaningService.calculateCleaningTime(prevFamily, currentFamily);
-
                 int extraCleaning = cleaningBeforeIfInserted + cleaningAfterIfInserted - cleaningSavedOld;
-
                 if (extraCleaning < minAddedCleaning) {
-                    // Check if swapping causes major disruptions (simple heuristic)
-                    if (!order.isCritical() || i < 5) { // Allow critical to skip ahead but not too far back
+                    if (!order.isCritical() || i < 5) {
                         minAddedCleaning = extraCleaning;
                         bestPos = i;
                     }
@@ -117,9 +95,6 @@ public class SchedulingService {
         return new ArrayList<>(optimized);
     }
 
-    /**
-     * Maps sequence to actual time slots
-     */
     public List<ScheduleSlot> mapToSlots(List<Order> sequence, LocalDateTime startTime) {
         List<ScheduleSlot> slots = new ArrayList<>();
         LocalDateTime currentTime = startTime;
@@ -127,18 +102,14 @@ public class SchedulingService {
 
         for (Order order : sequence) {
             int cleaningTime = cleaningService.calculateCleaningTime(lastFamily, order.getColorFamily());
-
-            // Add setup time
-            int totalDowntime = cleaningTime + setupTimeMinutes;
-            currentTime = currentTime.plusMinutes(totalDowntime);
-
-            // Avoid production window issues (simplified: assume next day if past 16h
-            // limit)
-            // In a real factory, we'd check if (currentTime + prodTime) > midnight
-
+            currentTime = currentTime.plusMinutes(cleaningTime + setupTimeMinutes);
             LocalDateTime slotStart = currentTime;
             long prodMinutes = (long) (order.getProductionTimeHours() * 60);
             LocalDateTime slotEnd = slotStart.plusMinutes(prodMinutes);
+
+            // Persist for history
+            order.setScheduledStartTime(slotStart);
+            order.setScheduledEndTime(slotEnd);
 
             slots.add(ScheduleSlot.builder()
                     .order(order)
@@ -147,24 +118,18 @@ public class SchedulingService {
                     .cleaningBeforeMinutes(cleaningTime)
                     .colorFamily(order.getColorFamily())
                     .build());
-
             currentTime = slotEnd;
             lastFamily = order.getColorFamily();
         }
         return slots;
     }
 
-    /**
-     * Final Evaluation Function
-     */
     public Schedule evaluateSchedule(List<ScheduleSlot> slots) {
         int totalCleaning = slots.stream().mapToInt(ScheduleSlot::getCleaningBeforeMinutes).sum();
         long totalProd = slots.stream()
-                .mapToLong(s -> java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes())
-                .sum();
-
+                .mapToLong(s -> java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes()).sum();
         char ecoGrade = ecoEfficiencyService.calculateEcoGrade(totalCleaning, (int) totalProd);
-        int waterSaved = ecoEfficiencyService.calculateWaterUsage(totalCleaning); // Here we would compare vs FIFO
+        int waterSaved = ecoEfficiencyService.calculateWaterUsage(totalCleaning);
         double wasteSaved = ecoEfficiencyService.calculateChemicalWaste(totalCleaning);
 
         return Schedule.builder()
@@ -177,21 +142,15 @@ public class SchedulingService {
                 .build();
     }
 
-    /**
-     * Orchestrates the full 4-phase optimization
-     */
     public Schedule generateOptimizedSchedule(List<Order> orders) {
         List<Order> analyzed = analyzeOrders(orders);
-        List<Order> baseSeq = generateBaseSchedule(analyzed);
-        List<Order> optimizedSeq = optimizeSequence(baseSeq);
-        // Phase 4: Simulated Annealing (Simplified for MVP)
-        // In 100 iterations, we'd swap non-critical orders and keep if score improves
-
+        List<Order> optimizedSeq = optimizeSequence(generateBaseSchedule(analyzed));
         List<ScheduleSlot> slots = mapToSlots(optimizedSeq, LocalDateTime.now().withHour(startHour).withMinute(0));
         Schedule schedule = evaluateSchedule(slots);
+        schedule.setFifoCleaningTimeMinutes(calculateFifoCleaningTime(analyzed));
 
-        int fifoCleaning = calculateFifoCleaningTime(analyzed);
-        schedule.setFifoCleaningTimeMinutes(fifoCleaning);
+        // Save orders to persist the scheduledStartTime/EndTime
+        orderRepository.saveAll(optimizedSeq);
 
         return schedule;
     }
@@ -208,42 +167,59 @@ public class SchedulingService {
 
     public ScheduleResponseDTO convertToDTO(Schedule schedule) {
         int timeSaved = schedule.getFifoCleaningTimeMinutes() - schedule.getTotalCleaningTimeMinutes();
+        Map<String, String> metrics = calculateMetrics(schedule);
 
-        // Calculate Deadline Compliance
-        long totalOrders = schedule.getSlots().size();
-        long compliantOrders = schedule.getSlots().stream()
-                .filter(s -> {
-                    LocalDateTime completionTime = s.getEndTime();
-                    LocalDateTime deadlineTime = s.getOrder().getCreatedAt().plusHours(s.getOrder().getDeadlineHours());
-                    return completionTime.isBefore(deadlineTime);
-                }).count();
-        double complianceRate = totalOrders > 0 ? (double) compliantOrders / totalOrders * 100 : 100.0;
-
-        // Calculate Machine Efficiency
-        long totalProdMinutes = schedule.getSlots().stream()
-                .mapToLong(s -> java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes())
-                .sum();
-        long totalDowntimeMinutes = schedule.getTotalCleaningTimeMinutes() + (totalOrders * setupTimeMinutes);
-        double efficiency = totalProdMinutes > 0
-                ? (double) totalProdMinutes / (totalProdMinutes + totalDowntimeMinutes) * 100
-                : 0;
+        if (!schedule.getSlots().isEmpty() && schedule.getSlots().get(0).getOrder().getSimulationRunId() != null) {
+            archiveSimulationRun(schedule.getSlots().get(0).getOrder().getSimulationRunId(), schedule, metrics);
+        }
 
         return ScheduleResponseDTO.builder()
                 .optimizedCleaningTimeMinutes(schedule.getTotalCleaningTimeMinutes())
                 .fifoCleaningTimeMinutes(schedule.getFifoCleaningTimeMinutes())
                 .timeSavedMinutes(Math.max(0, timeSaved))
-                .deadlineCompliance(String.format("%.1f%%", complianceRate))
-                .machineEfficiency(String.format("%.1f%%", efficiency))
+                .deadlineCompliance(metrics.get("compliance"))
+                .machineEfficiency(metrics.get("efficiency"))
                 .ecoGrade(schedule.getEcoGrade())
                 .waterSavedLiters(schedule.getTotalWaterSavedLiters())
                 .chemicalWasteSavedKg(schedule.getTotalChemicalWasteSavedKg())
                 .schedule(schedule.getSlots().stream().map(s -> ScheduleResponseDTO.SlotDTO.builder()
                         .orderId(s.getOrder().getId())
                         .colorFamily(s.getColorFamily())
-                        .startTime(s.getStartTime().toString()) // Full ISO for JS parsing
+                        .startTime(s.getStartTime().toString())
                         .endTime(s.getEndTime().toString())
                         .cleaningBeforeMinutes(s.getCleaningBeforeMinutes())
                         .build()).collect(Collectors.toList()))
                 .build();
+    }
+
+    private Map<String, String> calculateMetrics(Schedule schedule) {
+        long totalOrders = schedule.getSlots().size();
+        long compliantOrders = schedule.getSlots().stream()
+                .filter(s -> s.getEndTime()
+                        .isBefore(s.getOrder().getCreatedAt().plusHours(s.getOrder().getDeadlineHours())))
+                .count();
+        double complianceRate = totalOrders > 0 ? (double) compliantOrders / totalOrders * 100 : 100.0;
+        long totalProdMinutes = schedule.getSlots().stream()
+                .mapToLong(s -> java.time.Duration.between(s.getStartTime(), s.getEndTime()).toMinutes()).sum();
+        long totalDowntimeMinutes = schedule.getTotalCleaningTimeMinutes() + (totalOrders * setupTimeMinutes);
+        double efficiency = totalProdMinutes > 0
+                ? (double) totalProdMinutes / (totalProdMinutes + totalDowntimeMinutes) * 100
+                : 0;
+
+        Map<String, String> m = new HashMap<>();
+        m.put("compliance", String.format("%.1f%%", complianceRate));
+        m.put("efficiency", String.format("%.1f%%", efficiency));
+        return m;
+    }
+
+    private void archiveSimulationRun(Long runId, Schedule schedule, Map<String, String> metrics) {
+        simulationRunRepository.findById(runId).ifPresent(run -> {
+            run.setDeadlineCompliance(metrics.get("compliance"));
+            run.setMachineEfficiency(metrics.get("efficiency"));
+            run.setTotalCleaningTimeMinutes(schedule.getTotalCleaningTimeMinutes());
+            run.setTimeSavedMinutes(schedule.getFifoCleaningTimeMinutes() - schedule.getTotalCleaningTimeMinutes());
+            run.setEcoGrade(schedule.getEcoGrade());
+            simulationRunRepository.save(run);
+        });
     }
 }

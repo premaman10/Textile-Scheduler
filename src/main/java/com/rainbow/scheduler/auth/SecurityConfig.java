@@ -22,7 +22,7 @@ public class SecurityConfig {
                                                 .requestMatchers("/login.html", "/css/**", "/js/**", "/images/**",
                                                                 "/error**", "/webjars/**")
                                                 .permitAll()
-                                                .requestMatchers("/schedule/compare", "/analytics/**")
+                                                .requestMatchers("/api/schedule/compare", "/api/simulations/**")
                                                 .hasRole("MANAGER")
                                                 .anyRequest().authenticated())
                                 .oauth2Login(oauth2 -> oauth2

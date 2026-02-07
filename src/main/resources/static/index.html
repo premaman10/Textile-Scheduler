@@ -29,6 +29,9 @@
                 <a href="#" class="nav-item" data-tab="orders">
                     <i data-lucide="package"></i> Orders
                 </a>
+                <a href="#" class="nav-item" data-tab="simulations">
+                    <i data-lucide="database"></i> Simulation Stats
+                </a>
                 <a href="#" class="nav-item" data-tab="analytics">
                     <i data-lucide="bar-chart-3"></i> Analytics
                 </a>
@@ -100,7 +103,6 @@
                     </div>
                 </div>
 
-                <!-- Recent Activity Feed -->
                 <div class="glass" style="padding: 2rem; border-radius: 2.5rem; margin-top: 1rem;">
                     <h3 style="margin-bottom: 1.5rem; font-size: 0.9rem; color: var(--text-dim);">Factory Alerts</h3>
                     <div id="activityFeed" style="display: flex; flex-direction: column; gap: 0.75rem;">
@@ -156,9 +158,21 @@
                                 </tr>
                             </thead>
                             <tbody id="orderTableBody">
-                                <!-- Orders injected here -->
                             </tbody>
                         </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Simulation Stats View (Dedicated Page) -->
+            <div id="simulationsTab" class="tab-content">
+                <div class="glass" style="padding: 2.5rem; border-radius: 2.5rem;">
+                    <div class="timeline-header">
+                        <h3>Peak Hour Test Cases (Recent 10)</h3>
+                    </div>
+                    <div id="simHistoryList"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+                        <!-- Simulation Run Cards -->
                     </div>
                 </div>
             </div>
@@ -219,6 +233,35 @@
                     <button type="button" id="closeModal" class="btn btn-secondary">Cancel</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Simulation Detail Modal (The Array of 100 Orders) -->
+    <div id="simDetailModal" class="modal-overlay" style="display: none;">
+        <div class="modal-content glass"
+            style="width: 80%; height: 80%; max-width: 1000px; display: flex; flex-direction: column;">
+            <div class="timeline-header">
+                <h2 id="simDetailTitle">Simulation Data</h2>
+                <button id="closeSimModal" class="btn btn-secondary">Close View</button>
+            </div>
+            <div style="flex-grow: 1; overflow-y: auto; margin-top: 1rem;">
+                <table class="order-table" style="width: 100%;">
+                    <thead>
+                        <tr
+                            style="text-align: left; color: var(--text-dim); font-size: 0.8rem; border-bottom: 1px solid var(--glass-border);">
+                            <th style="padding: 1rem;">ID</th>
+                            <th style="padding: 1rem;">Color</th>
+                            <th style="padding: 1rem;">Qty</th>
+                            <th style="padding: 1rem;">Type</th>
+                            <th style="padding: 1rem;">Deadline</th>
+                            <th style="padding: 1rem;">Received At</th>
+                            <th style="padding: 1rem;">Scheduled For</th>
+                        </tr>
+                    </thead>
+                    <tbody id="simDetailBody">
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

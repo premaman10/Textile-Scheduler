@@ -8,18 +8,29 @@ let familyChart = null;
 const colorMap = {
     'WHITES_PASTELS': '#f8fafc',
     'LIGHT_COLORS': '#bae6fd',
-    'MEDIUM_COLORS': '#7dd3fc',
-    'DARK_COLORS': '#38bdf8',
-    'BLACKS_DEEP_DARKS': '#1e293b'
+    'MEDIUM_COLORS': '#bae6fd',
+    'DARK_COLORS': '#1e293b',
+    'BLACKS_DEEP_DARKS': '#020617'
+};
+
+const familyLabels = {
+    'WHITES_PASTELS': 'Whites & Pastels',
+    'LIGHT_COLORS': 'Light Colors',
+    'MEDIUM_COLORS': 'Medium Colors',
+    'DARK_COLORS': 'Dark Colors',
+    'BLACKS_DEEP_DARKS': 'Blacks & Deep Darks'
 };
 
 document.addEventListener('DOMContentLoaded', () => {
-    setupEventListeners();
+    lucide.createIcons();
     initCharts();
+    setupEventListeners();
     refreshOrders();
+    fetchSimulations();
 });
 
 function setupEventListeners() {
+    // Tab Switching
     document.querySelectorAll('.nav-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.preventDefault();
@@ -28,47 +39,90 @@ function setupEventListeners() {
         });
     });
 
+    // Core Actions
     document.getElementById('populateBtn').addEventListener('click', populateDemoData);
     document.getElementById('simulateBtn').addEventListener('click', simulatePeakHours);
     document.getElementById('generateBtn').addEventListener('click', generateSchedule);
     document.getElementById('clearOrdersBtn').addEventListener('click', clearOrders);
 
-    const modal = document.getElementById('orderModal');
-    document.getElementById('addOrderBtn').addEventListener('click', () => modal.style.display = 'flex');
-    document.getElementById('closeModal').addEventListener('click', () => modal.style.display = 'none');
+    // Modal
+    document.getElementById('addOrderBtn').addEventListener('click', () => {
+        document.getElementById('orderModal').style.display = 'flex';
+    });
+    document.getElementById('closeModal').addEventListener('click', () => {
+        document.getElementById('orderModal').style.display = 'none';
+    });
+    document.getElementById('orderForm').addEventListener('submit', handleManualOrder);
 
-    document.getElementById('orderForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        await createOrder();
+    // Simulation Modal
+    document.getElementById('closeSimModal').addEventListener('click', () => {
+        document.getElementById('simDetailModal').style.display = 'none';
     });
 }
 
 function switchTab(tabId) {
     document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
     document.querySelector(`[data-tab="${tabId}"]`).classList.add('active');
-    const tabEl = document.getElementById(`${tabId}Tab`);
-    if (tabEl) tabEl.classList.add('active');
+
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(tabId + 'Tab').classList.add('active');
 
     document.getElementById('pageTitle').innerText = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+
+    // Refresh specifics
+    if (tabId === 'simulations') fetchSimulations();
+    if (tabId === 'analytics') updateAnalytics();
 }
 
 async function refreshOrders() {
     try {
         const response = await fetch('/api/orders');
+        allOrders = await response.json();
+        renderOrderTable();
+        updateCapacity();
+    } catch (err) { console.error(err); }
+}
+
+function renderOrderTable() {
+    const tbody = document.getElementById('orderTableBody');
+    tbody.innerHTML = '';
+
+    allOrders.forEach(order => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td style="padding: 1rem;">${order.id}</td>
+            <td style="padding: 1rem;">${order.colorName}</td>
+            <td style="padding: 1rem;"><div style="width:12px; height:12px; border-radius:3px; background:${colorMap[order.colorFamily] || '#ccc'}; display:inline-block; margin-right:5px;"></div> ${familyLabels[order.colorFamily]}</td>
+            <td style="padding: 1rem;">${order.quantityMeters}</td>
+            <td style="padding: 1rem;"><span class="badge badge-${order.orderType.toLowerCase()}">${order.orderType}</span></td>
+            <td style="padding: 1rem;">${order.deadlineHours}h</td>
+            <td style="padding: 1rem;"><span class="status-badge status-${order.status.toLowerCase()}">${order.status}</span></td>
+            <td style="padding: 1rem;">
+                ${order.status !== 'COMPLETED' ? `<button onclick="completeOrder(${order.id})" class="btn" style="padding:0.25rem 0.6rem; font-size:0.7rem; border:1px solid var(--glass-border);">Done</button>` : '✓'}
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function completeOrder(id) {
+    try {
+        const response = await fetch(`/api/orders/${id}/status?status=COMPLETED`, { method: 'PATCH' });
         if (response.ok) {
-            allOrders = await response.json();
-            renderOrderTable();
-            updateCapacityUI();
-            updateAnalyticsCharts();
-            updateActivityFeed();
+            addActivityAlert(`Order #${id} marked as Completed.`, 'eco');
+            refreshOrders();
         }
     } catch (err) { console.error(err); }
 }
 
-async function createOrder() {
-    const orderData = {
+async function handleManualOrder(e) {
+    e.preventDefault();
+    if (allOrders.length >= 100) {
+        showPopup('Factory Capacity Reached (100/100)!');
+        return;
+    }
+
+    const order = {
         colorName: document.getElementById('colorNameField').value,
         colorFamily: document.getElementById('colorFamilyField').value,
         quantityMeters: parseInt(document.getElementById('quantityField').value),
@@ -80,96 +134,16 @@ async function createOrder() {
         const response = await fetch('/api/orders', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(orderData)
+            body: JSON.stringify(order)
         });
-
         if (response.ok) {
             document.getElementById('orderModal').style.display = 'none';
             document.getElementById('orderForm').reset();
             refreshOrders();
-            showPopup('Order created successfully!');
-        } else {
-            alert(await response.text());
+            showPopup('New Production Order Added.');
+            addActivityAlert(`Manual Intake: ${order.colorName}`, 'eco');
         }
     } catch (err) { console.error(err); }
-}
-
-async function completeOrder(id) {
-    try {
-        const response = await fetch(`/api/orders/${id}/status?status=COMPLETED`, { method: 'PATCH' });
-        if (response.ok) {
-            refreshOrders();
-            showPopup(`Order #${id} marked as COMPLETED.`);
-            addActivityAlert(`Order #${id} production finished.`, 'eco');
-        }
-    } catch (err) { console.error(err); }
-}
-
-function renderOrderTable() {
-    const tbody = document.getElementById('orderTableBody');
-    tbody.innerHTML = '';
-
-    allOrders.forEach(o => {
-        const row = document.createElement('tr');
-        const statusClass = `status-${o.status.toLowerCase()}`;
-
-        row.innerHTML = `
-            <td style="padding: 1rem;">#${o.id}</td>
-            <td style="padding: 1rem;">${o.colorName}</td>
-            <td style="padding: 1rem;"><div style="display:flex; align-items:center; gap:0.5rem;"><div style="width:12px; height:12px; border-radius:3px; background:${colorMap[o.colorFamily]}"></div> ${o.colorFamily}</div></td>
-            <td style="padding: 1rem;">${o.quantityMeters}m</td>
-            <td style="padding: 1rem;"><span class="badge badge-${o.orderType.toLowerCase()}">${o.orderType}</span></td>
-            <td style="padding: 1rem;">${o.deadlineHours}h</td>
-            <td style="padding: 1rem;"><span class="status-badge ${statusClass}">${o.status}</span></td>
-            <td style="padding: 1rem;">
-                ${o.status !== 'COMPLETED' ? `<button class="btn btn-secondary" style="padding: 0.25rem 0.5rem; font-size: 0.7rem;" onclick="completeOrder(${o.id})">Complete</button>` : '--'}
-            </td>
-        `;
-        tbody.appendChild(row);
-    });
-}
-
-function updateCapacityUI() {
-    const count = allOrders.length;
-    const label = document.getElementById('capacityLabel');
-    label.innerText = `Capacity: ${count}/100`;
-
-    if (count >= 100) {
-        label.style.color = '#ef4444';
-    } else if (count >= 90) {
-        label.style.color = '#f59e0b';
-        addActivityAlert('FACTORY ALERT: Capacity at 90%.', 'warn');
-    }
-}
-
-function updateActivityFeed() {
-    const feed = document.getElementById('activityFeed');
-    const completed = allOrders.filter(o => o.status === 'COMPLETED').length;
-    if (completed > 0 && completed % 10 === 0) {
-        addActivityAlert(`${completed} orders completed today.`, 'eco');
-    }
-}
-
-function addActivityAlert(msg, type) {
-    const feed = document.getElementById('activityFeed');
-    if (feed.innerText === 'No recent alerts.') feed.innerHTML = '';
-
-    const alert = document.createElement('div');
-    alert.style.cssText = `
-        padding: 0.75rem 1rem; border-radius: 1rem; font-size: 0.8rem;
-        background: rgba(255,255,255,0.02); border-left: 3px solid ${type === 'warn' ? '#ef4444' : '#34d399'};
-    `;
-    alert.innerHTML = `<span style="color: var(--text-dim); margin-right: 0.5rem;">[${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}]</span> ${msg}`;
-    feed.prepend(alert);
-}
-
-function showPopup(msg) {
-    const p = document.createElement('div');
-    p.className = 'glass';
-    p.style.cssText = `position:fixed; top:2rem; right:2rem; padding:1.5rem; z-index:2000; border-radius:1.5rem; border-color:#34d399; color:#34d399; font-weight:700;`;
-    p.innerText = msg;
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 4000);
 }
 
 async function populateDemoData() {
@@ -199,24 +173,14 @@ async function simulatePeakHours() {
         if (response.ok) {
             await refreshOrders();
             showPopup('100 Peak-Hour test cases generated!');
-            addActivityAlert('SIMULATION: 100 high-urgency orders added.', 'warn');
+            addActivityAlert('SIMULATION started: 100 orders.', 'warn');
 
-            // Auto trigger optimization for simulation
+            // Auto optimize
             await generateSchedule();
+            fetchSimulations();
         }
         btn.innerHTML = oldText;
         btn.disabled = false;
-    } catch (err) { console.error(err); }
-}
-
-async function clearOrders() {
-    if (!confirm('Clear all?')) return;
-    try {
-        const response = await fetch('/api/orders/clear', { method: 'DELETE' });
-        if (response.ok) {
-            refreshOrders();
-            showPopup('Factory cleared.');
-        }
     } catch (err) { console.error(err); }
 }
 
@@ -224,46 +188,27 @@ async function generateSchedule() {
     try {
         const btn = document.getElementById('generateBtn');
         btn.innerText = 'Optimizing...';
-        btn.disabled = true;
-        const response = await fetch('/schedule/generate', { method: 'POST' });
+        const response = await fetch('/api/schedule/generate', { method: 'POST' });
         if (response.ok) {
             currentSchedule = await response.json();
             updateDashboard();
             renderTimeline();
-            fetchComparison();
+            showPopup('Dynamic Schedule Generated.');
+            addActivityAlert(`Optimization Finised. Savings: ${currentSchedule.timeSavedMinutes}m`, 'eco');
             refreshOrders();
-            switchTab('dashboard');
-            addActivityAlert('Optimization engine: Schedule updated.', 'eco');
         }
         btn.innerText = 'Generate Optimized';
-        btn.disabled = false;
     } catch (err) { console.error(err); }
 }
 
-async function fetchComparison() {
+async function clearOrders() {
+    if (!confirm('Clear all?')) return;
     try {
-        const response = await fetch('/schedule/compare');
-        if (response.ok) {
-            const data = await response.json();
-            comparisonChart.data.datasets[0].data = [data.fifoCleaningTimeMinutes, data.optimizedCleaningTimeMinutes];
-            comparisonChart.update();
-        }
+        await fetch('/api/orders/clear', { method: 'DELETE' });
+        refreshOrders();
+        currentSchedule = null;
+        document.getElementById('timelineBody').innerHTML = 'Cleared.';
     } catch (err) { console.error(err); }
-}
-
-function initCharts() {
-    const cfg = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#94a3b8' } }, x: { grid: { display: false }, ticks: { color: '#94a3b8' } } } };
-    comparisonChart = new Chart(document.getElementById('comparisonChart').getContext('2d'), { type: 'bar', data: { labels: ['Baseline', 'Optimized'], datasets: [{ data: [0, 0], backgroundColor: ['rgba(248, 113, 113, 0.2)', 'rgba(52, 211, 153, 0.5)'], borderColor: ['#f87171', '#34d399'], borderWidth: 2, borderRadius: 10 }] }, options: cfg });
-    priorityChart = new Chart(document.getElementById('priorityChart').getContext('2d'), { type: 'doughnut', data: { labels: ['Rush', 'Standard', 'Bulk'], datasets: [{ data: [0, 0, 0], backgroundColor: ['#fca5a5', '#fef9c3', '#dcfce7'], borderColor: 'transparent' }] }, options: { ...cfg, cutout: '70%', plugins: { legend: { display: true, position: 'bottom', labels: { color: '#94a3b8' } } } } });
-    familyChart = new Chart(document.getElementById('familyChart').getContext('2d'), { type: 'bar', data: { labels: Object.keys(colorMap), datasets: [{ data: [0, 0, 0, 0, 0], backgroundColor: Object.values(colorMap), borderRadius: 5 }] }, options: { ...cfg, indexAxis: 'y' } });
-}
-
-function updateAnalyticsCharts() {
-    if (!allOrders.length) return;
-    priorityChart.data.datasets[0].data = ['RUSH', 'STANDARD', 'BULK'].map(t => allOrders.filter(o => o.orderType === t).length);
-    priorityChart.update();
-    familyChart.data.datasets[0].data = Object.keys(colorMap).map(f => allOrders.filter(o => o.colorFamily === f).length);
-    familyChart.update();
 }
 
 function updateDashboard() {
@@ -273,24 +218,213 @@ function updateDashboard() {
     document.getElementById('complianceValue').innerText = currentSchedule.deadlineCompliance;
     document.getElementById('efficiencyValue').innerText = currentSchedule.machineEfficiency;
 
-    // Add simulation results alert to activity feed if it looks like a simulation
-    if (currentSchedule.schedule.length >= 100) {
-        addActivityAlert(`Stats: Compliance ${currentSchedule.deadlineCompliance} | Efficiency ${currentSchedule.machineEfficiency}`, 'eco');
-    }
+    updateCharts();
 }
 
-function renderTimeline() {
-    const container = document.getElementById('timelineBody');
-    container.innerHTML = '';
-    if (!currentSchedule || !currentSchedule.schedule) return;
-    currentSchedule.schedule.forEach(slot => {
-        const row = document.createElement('div');
-        row.className = 'timeline-row';
-        const cleaningWidth = (slot.cleaningBeforeMinutes / 120) * 100;
-        row.innerHTML = `<div class="row-label"><span>#${slot.orderId}</span><span class="slot-range">${slot.startTime} - ${slot.endTime}</span></div><div class="production-bar-container"><div class="production-bar" style="background-color: ${colorMap[slot.colorFamily]}; width: 100%;">${slot.cleaningBeforeMinutes > 0 ? `<div class="cleaning-indicator" style="width: ${cleaningWidth}%">CLEANING</div>` : ''}<span style="margin-left: ${slot.cleaningBeforeMinutes > 0 ? cleaningWidth + 2 : 0}%">${slot.colorFamily}</span></div></div>`;
-        container.appendChild(row);
+function initCharts() {
+    const ctxComp = document.getElementById('comparisonChart').getContext('2d');
+    comparisonChart = new Chart(ctxComp, {
+        type: 'bar',
+        data: {
+            labels: ['Baseline (FIFO)', 'RainBow Optimizer'],
+            datasets: [{
+                label: 'Cleaning Downtime (min)',
+                data: [0, 0],
+                backgroundColor: ['rgba(255, 255, 255, 0.05)', '#f59e0b'],
+                borderRadius: 10
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } } }
+        }
+    });
+
+    const ctxPrio = document.getElementById('priorityChart').getContext('2d');
+    priorityChart = new Chart(ctxPrio, {
+        type: 'doughnut',
+        data: {
+            labels: ['Rush', 'Standard', 'Bulk'],
+            datasets: [{
+                data: [0, 0, 0],
+                backgroundColor: ['#f87171', '#fbbf24', '#34d399'],
+                borderWidth: 0
+            }]
+        }
+    });
+
+    const ctxFam = document.getElementById('familyChart').getContext('2d');
+    familyChart = new Chart(ctxFam, {
+        type: 'bar',
+        data: {
+            labels: Object.values(familyLabels),
+            datasets: [{
+                label: 'Orders',
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: '#34d399'
+            }]
+        }
     });
 }
 
-// Global for inline onclick
-window.completeOrder = completeOrder;
+function updateCharts() {
+    if (!currentSchedule) return;
+    comparisonChart.data.datasets[0].data = [currentSchedule.fifoCleaningTimeMinutes, currentSchedule.optimizedCleaningTimeMinutes];
+    comparisonChart.update();
+}
+
+function updateAnalytics() {
+    if (allOrders.length === 0) return;
+
+    // Priority Distribution
+    const counts = { RUSH: 0, STANDARD: 0, BULK: 0 };
+    allOrders.forEach(o => counts[o.orderType]++);
+    priorityChart.data.datasets[0].data = [counts.RUSH, counts.STANDARD, counts.BULK];
+    priorityChart.update();
+
+    // Family Load
+    const famCounts = {};
+    allOrders.forEach(o => famCounts[o.colorFamily] = (famCounts[o.colorFamily] || 0) + 1);
+    familyChart.data.datasets[0].data = Object.keys(familyLabels).map(f => famCounts[f] || 0);
+    familyChart.update();
+}
+
+function renderTimeline() {
+    const body = document.getElementById('timelineBody');
+    body.innerHTML = '';
+
+    currentSchedule.schedule.forEach((slot, index) => {
+        const row = document.createElement('div');
+        row.className = 'timeline-row';
+        row.innerHTML = `
+            <div class="row-label">
+                <span>Batch #${index + 1}</span>
+                <span class="slot-range">${new Date(slot.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${new Date(slot.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            </div>
+            <div class="production-bar-container">
+                ${slot.cleaningBeforeMinutes > 0 ? `<div class="cleaning-indicator" style="width: ${Math.min(100, (slot.cleaningBeforeMinutes / 120) * 100)}%">${slot.cleaningBeforeMinutes}m</div>` : ''}
+                <div class="production-bar" style="background: ${colorMap[slot.colorFamily]}; width: 100%;">
+                    Order #${slot.orderId} (${slot.colorFamily})
+                </div>
+            </div>
+        `;
+        body.appendChild(row);
+    });
+}
+
+// SIMULATION HISTORY LOGIC
+async function fetchSimulations() {
+    try {
+        const response = await fetch('/api/simulations');
+        const sims = await response.json();
+        renderSimulations(sims);
+    } catch (err) { console.error(err); }
+}
+
+function renderSimulations(sims) {
+    const container = document.getElementById('simHistoryList');
+    container.innerHTML = '';
+
+    if (sims.length === 0) {
+        container.innerHTML = '<div style="color:var(--text-dim);">No simulations run yet. Click "Peak Simulation" to start.</div>';
+        return;
+    }
+
+    sims.forEach(sim => {
+        const card = document.createElement('div');
+        card.className = 'glass stat-card';
+        card.style.cursor = 'pointer';
+        card.style.transition = 'transform 0.2s';
+        card.onmouseover = () => card.style.transform = 'translateY(-5px)';
+        card.onmouseout = () => card.style.transform = 'translateY(0)';
+
+        card.innerHTML = `
+            <div class="stat-header">
+                <i data-lucide="database"></i>
+                <span>${sim.name}</span>
+            </div>
+            <div style="font-size: 0.7rem; color: var(--text-dim); margin-top: -0.5rem;">${new Date(sim.timestamp).toLocaleString()}</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                <div>
+                    <div style="font-size: 0.6rem; color: var(--text-dim);">COMPLIANCE</div>
+                    <div style="font-weight: 700; color: var(--eco-green);">${sim.deadlineCompliance || 'N/A'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 0.6rem; color: var(--text-dim);">EFFICIENCY</div>
+                    <div style="font-weight: 700;">${sim.machineEfficiency || 'N/A'}</div>
+                </div>
+            </div>
+            <div style="font-size: 0.6rem; color: var(--text-dim); margin-top: 1rem; text-align: right;">Click to view 100 orders Array →</div>
+        `;
+        card.addEventListener('click', () => showSimulationDetails(sim));
+        container.appendChild(card);
+    });
+    lucide.createIcons();
+}
+
+async function showSimulationDetails(sim) {
+    try {
+        const response = await fetch(`/api/simulations/${sim.id}/orders`);
+        const orders = await response.json();
+
+        document.getElementById('simDetailTitle').innerText = `${sim.name} Order Array (${orders.length} items)`;
+        const tbody = document.getElementById('simDetailBody');
+        tbody.innerHTML = '';
+
+        orders.forEach(o => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${o.id}</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${o.colorFamily}</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${o.quantityMeters}m</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${o.orderType}</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);">${o.deadlineHours}h</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02);; font-size: 0.7rem; color: var(--text-dim);">${new Date(o.createdAt).toLocaleTimeString()}</td>
+                <td style="padding: 0.75rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.02); font-weight: 600; color: var(--primary);">${o.scheduledStartTime ? new Date(o.scheduledStartTime).toLocaleTimeString() : 'Pending'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        document.getElementById('simDetailModal').style.display = 'flex';
+    } catch (err) { console.error(err); }
+}
+
+function updateCapacity() {
+    const label = document.getElementById('capacityLabel');
+    const count = allOrders.length;
+    label.innerText = `Capacity: ${count}/100`;
+    if (count >= 100) label.style.color = '#f87171';
+    else if (count >= 90) label.style.color = '#fbbf24';
+    else label.style.color = 'var(--text-dim)';
+}
+
+function showPopup(msg) {
+    const p = document.createElement('div');
+    p.innerText = msg;
+    p.style.position = 'fixed';
+    p.style.bottom = '2rem';
+    p.style.right = '2rem';
+    p.style.background = 'var(--primary)';
+    p.style.color = '#000';
+    p.style.padding = '1rem 2rem';
+    p.style.borderRadius = '1rem';
+    p.style.fontWeight = '700';
+    p.style.boxShadow = '0 10px 40px rgba(0,0,0,0.5)';
+    p.style.zIndex = '9999';
+    p.style.animation = 'fadeIn 0.3s ease';
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 3000);
+}
+
+function addActivityAlert(msg, type) {
+    const feed = document.getElementById('activityFeed');
+    const alert = document.createElement('div');
+    alert.style.padding = '0.5rem 0.8rem';
+    alert.style.borderRadius = '0.75rem';
+    alert.style.fontSize = '0.75rem';
+    alert.style.background = 'rgba(255,255,255,0.03)';
+    alert.style.borderLeft = `3px solid ${type === 'eco' ? 'var(--eco-green)' : type === 'warn' ? '#f87171' : 'var(--primary)'}`;
+    alert.innerHTML = `<span style="opacity:0.6; margin-right:5px;">${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span> ${msg}`;
+    feed.prepend(alert);
+    if (feed.children.length > 5) feed.lastElementChild.remove();
+}

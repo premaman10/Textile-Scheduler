@@ -40,4 +40,9 @@ public class Order {
     private double urgencyScore;
     private double productionTimeHours;
     private boolean isCritical;
+
+    private Long simulationRunId; // Link to SimulationRun
+
+    private LocalDateTime scheduledStartTime;
+    private LocalDateTime scheduledEndTime;
 }
