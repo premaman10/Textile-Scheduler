@@ -1,7 +1,7 @@
 # Rainbow Textiles Smart Production Scheduler
 
 A production-ready MVP for optimizing fabric dyeing schedules with a unique **Eco-Efficiency Score** feature.
-
+Docker image url = https://hub.docker.com/repository/docker/premaman10/textile-scheduler/general
 ## 🏭 Business Context
 Rainbow Textiles manages a single industrial dyeing machine. Switching between colors requires cleaning, consuming time, water, and chemicals. This system minimizes downtime while ensuring all deadlines (especially Rush orders) are met.
 
