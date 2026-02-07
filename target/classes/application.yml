@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: textile-scheduler
+  datasource:
+    url: jdbc:mysql://localhost:3306/textile_db?createDatabaseIfNotExist=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:password}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - email
+              - profile
+          github:
+            client-id: ${GITHUB_CLIENT_ID}
+            client-secret: ${GITHUB_CLIENT_SECRET}
+            scope:
+              - user:email
+              - read:user
+
+# Production Parameters
+production:
+  dyeing-speed-meters-per-hour: 50
+  setup-time-minutes: 15
+  daily-window-hours: 16
+  start-hour: 8
+  min-batch-meters: 100
+
+# Eco-Efficiency Factors
+eco:
+  water-per-cleaning-minute: 15
+  chemical-waste-per-cleaning-minute: 0.2
+
+logging:
+  level:
+    org.springframework.security: DEBUG
