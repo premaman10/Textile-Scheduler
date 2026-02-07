@@ -279,7 +279,6 @@ function renderTimeline() {
     });
 }
 
-// SIMULATION HISTORY LOGIC
 async function fetchSimulations() {
     try {
         const response = await fetch('/api/simulations');

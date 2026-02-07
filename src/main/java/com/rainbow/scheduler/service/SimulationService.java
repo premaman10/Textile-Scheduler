@@ -42,8 +42,8 @@ public class SimulationService {
         orderRepository.saveAll(orders);
 
         // Process this specific simulation run
-        // schedulingService.generateOptimizedSchedule(orders); // Removed to allow
-        // manual trigger
+        Schedule schedule = schedulingService.generateOptimizedSchedule(orders);
+        schedulingService.convertToDTO(schedule); // Triggers archiving of metrics
     }
 
     private List<Order> generateRandomOrders(int count, Long runId) {

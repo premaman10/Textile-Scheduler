@@ -196,18 +196,6 @@ public class SchedulingService {
                 .build();
     }
 
-    private double calculateIndustrialScore(List<ScheduleSlot> slots, int cleaningTime) {
-        // Cleaning Optimization (40%)
-        double cleaningImpact = Math.max(0, (1 - (double) cleaningTime / 400.0) * 40);
-        // Deadline Compliance (30%)
-        long compliant = slots.stream().filter(
-                s -> s.getEndTime().isBefore(s.getOrder().getCreatedAt().plusHours(s.getOrder().getDeadlineHours())))
-                .count();
-        double complianceImpact = ((double) compliant / slots.size()) * 30;
-
-        return cleaningImpact + complianceImpact + 30; // 30% Fixed for Profit/Rush Weights
-    }
-
     private int calculateFifoCleaningTime(List<Order> orders) {
         int total = 0;
         ColorFamily last = ColorFamily.WHITES_PASTELS;
